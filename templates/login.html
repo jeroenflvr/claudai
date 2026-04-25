@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>claudai — sign in</title>
+  <style>
+    :root[data-theme="dark"] {
+      --bg:       #0d0d0d;
+      --surface:  #1a1a1a;
+      --border:   #2e2e2e;
+      --text:     #e8e8e8;
+      --muted:    #888;
+      --accent:   #7c6af7;
+      --err:      #e57373;
+    }
+    :root[data-theme="light"] {
+      --bg:       #f5f5f5;
+      --surface:  #ffffff;
+      --border:   #d4d4d4;
+      --text:     #1a1a1a;
+      --muted:    #666;
+      --accent:   #5a4fcf;
+      --err:      #c62828;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: min(380px, 92vw);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+    h1 span { color: var(--accent); }
+    label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: .35rem; }
+    input[type="password"] {
+      width: 100%;
+      padding: .6rem .9rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input[type="password"]:focus { border-color: var(--accent); }
+    button {
+      width: 100%;
+      padding: .65rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .88; }
+    .error {
+      color: var(--err);
+      font-size: .875rem;
+      padding: .5rem .75rem;
+      background: color-mix(in srgb, var(--err) 12%, transparent);
+      border-radius: 6px;
+    }
+  </style>
+  <script>
+    // Respect the saved theme preference
+    const t = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h1>sign in to <span>claudai</span></h1>
+
+    {% if !error.is_empty() %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/login">
+      <label for="password">password</label>
+      <input type="password" id="password" name="password" autofocus autocomplete="current-password" required />
+      <br style="margin:.75rem 0;display:block" />
+      <button type="submit">continue →</button>
+    </form>
+  </div>
+</body>
+</html>
