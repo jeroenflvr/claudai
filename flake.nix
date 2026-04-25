@@ -24,11 +24,13 @@
         nativeBuildInputs = with pkgs; [
           rustToolchain
           pkg-config
+          cmake
+          gcc
         ];
 
-        # Runtime / link-time libraries
+        # Runtime / link-time libraries (duckdb is now statically linked via bundled feature)
         buildInputs = with pkgs; [
-          duckdb   # provides libduckdb.so + duckdb.pc for duckdb-sys
+          openssl  # still needed by reqwest for anything not rustls; harmless to include
         ];
       in
       {
@@ -38,13 +40,9 @@
         devShells.default = pkgs.mkShell {
           inherit nativeBuildInputs buildInputs;
 
-          # Let duckdb-sys find the library via pkg-config
-          PKG_CONFIG_PATH = "${pkgs.duckdb}/lib/pkgconfig";
-
-          # Handy: show the binary path when entering the shell
           shellHook = ''
             echo "claudia dev shell — rust $(rustc --version)"
-            echo "duckdb: $(pkg-config --modversion duckdb 2>/dev/null || echo 'check PKG_CONFIG_PATH')"
+            echo "duckdb: bundled (static)"
           '';
         };
 
@@ -59,8 +57,6 @@
           cargoLock.lockFile = ./Cargo.lock;
 
           inherit nativeBuildInputs buildInputs;
-
-          PKG_CONFIG_PATH = "${pkgs.duckdb}/lib/pkgconfig";
 
           # Templates are embedded at compile time by askama; nothing extra needed.
           # The binary expects ANTHROPIC_API_KEY at runtime, not build time.

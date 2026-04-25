@@ -173,12 +173,12 @@ async fn send_otp_email(state: &AppState, otp: &str) -> Result<(), String> {
 }
 
 /// Guard — returns Err(redirect) when the session is not fully authenticated.
-async fn require_auth(session: &Session) -> Result<(), Redirect> {
+async fn require_auth(session: &Session, base_path: &str) -> Result<(), Redirect> {
     let step: Option<String> = session.get(SESSION_AUTH_STEP).await.unwrap_or(None);
     if step.as_deref() == Some("authenticated") {
         Ok(())
     } else {
-        Err(Redirect::to("/login"))
+        Err(Redirect::to(&format!("{base_path}/login")))
     }
 }
 
@@ -200,7 +200,7 @@ async fn get_login(State(state): State<Arc<AppState>>, session: Session) -> impl
     // If already authenticated, skip straight to the app
     let step: Option<String> = session.get(SESSION_AUTH_STEP).await.unwrap_or(None);
     if step.as_deref() == Some("authenticated") {
-        return Redirect::to("/").into_response();
+        return Redirect::to(&format!("{}/", state.base_path)).into_response();
     }
     LoginTemplate { error: String::new(), base_path: state.base_path.clone() }.into_response()
 }
@@ -229,7 +229,7 @@ async fn post_login(
     match send_otp_email(&state, &otp).await {
         Ok(()) => {
             info!("OTP sent to {}", state.auth_email);
-            Redirect::to("/verify").into_response()
+            Redirect::to(&format!("{}/verify", state.base_path)).into_response()
         }
         Err(e) => {
             warn!("Failed to send OTP email: {e}");
@@ -247,9 +247,9 @@ async fn post_login(
 async fn get_verify(State(state): State<Arc<AppState>>, session: Session) -> impl IntoResponse {
     let step: Option<String> = session.get(SESSION_AUTH_STEP).await.unwrap_or(None);
     match step.as_deref() {
-        Some("authenticated") => Redirect::to("/").into_response(),
+        Some("authenticated") => Redirect::to(&format!("{}/", state.base_path)).into_response(),
         Some("password_ok")   => VerifyTemplate { error: String::new(), base_path: state.base_path.clone() }.into_response(),
-        _                     => Redirect::to("/login").into_response(),
+        _                     => Redirect::to(&format!("{}/login", state.base_path)).into_response(),
     }
 }
 
@@ -260,7 +260,7 @@ async fn post_verify(
 ) -> impl IntoResponse {
     let step: Option<String> = session.get(SESSION_AUTH_STEP).await.unwrap_or(None);
     if step.as_deref() != Some("password_ok") {
-        return Redirect::to("/login").into_response();
+        return Redirect::to(&format!("{}/login", state.base_path)).into_response();
     }
 
     let stored_otp: Option<String> = session.get(SESSION_OTP).await.unwrap_or(None);
@@ -271,7 +271,7 @@ async fn post_verify(
 
     if expired {
         session.delete().await.ok();
-        return Redirect::to("/login?expired=1").into_response();
+        return Redirect::to(&format!("{}/login?expired=1", state.base_path)).into_response();
     }
 
     if stored_otp.as_deref() != Some(form.otp.trim()) {
@@ -288,13 +288,12 @@ async fn post_verify(
     session.remove::<i64>(SESSION_OTP_EXP).await.ok();
     session.insert(SESSION_AUTH_STEP, "authenticated").await.ok();
     info!("User authenticated successfully");
-
-    Redirect::to("/").into_response()
+    Redirect::to(&format!("{}/", state.base_path)).into_response()
 }
 
-async fn post_logout(session: Session) -> impl IntoResponse {
+async fn post_logout(State(state): State<Arc<AppState>>, session: Session) -> impl IntoResponse {
     session.delete().await.ok();
-    Redirect::to("/login")
+    Redirect::to(&format!("{}/login", state.base_path))
 }
 
 // ---------------------------------------------------------------------------
@@ -302,7 +301,7 @@ async fn post_logout(session: Session) -> impl IntoResponse {
 // ---------------------------------------------------------------------------
 
 async fn index(State(state): State<Arc<AppState>>, session: Session) -> impl IntoResponse {
-    if let Err(r) = require_auth(&session).await { return r.into_response(); }
+    if let Err(r) = require_auth(&session, &state.base_path).await { return r.into_response(); }
     IndexTemplate { base_path: state.base_path.clone() }.into_response()
 }
 
@@ -310,7 +309,7 @@ async fn api_sessions(
     State(state): State<Arc<AppState>>,
     session: Session,
 ) -> Result<Json<Vec<SessionSummary>>, (StatusCode, String)> {
-    require_auth(&session).await
+    require_auth(&session, &state.base_path).await
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Not authenticated".into()))?;
 
     let db = state.db.lock().map_err(|e| {
@@ -349,7 +348,7 @@ async fn api_session_turns(
     session: Session,
     axum::extract::Path(session_id): axum::extract::Path<String>,
 ) -> Result<Json<Vec<TurnRow>>, (StatusCode, String)> {
-    require_auth(&session).await
+    require_auth(&session, &state.base_path).await
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Not authenticated".into()))?;
 
     let db = state.db.lock().map_err(|e| {
@@ -386,7 +385,7 @@ async fn chat(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    require_auth(&session).await
+    require_auth(&session, &state.base_path).await
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Not authenticated".into()))?;
 
     let override_hdr = headers
@@ -522,27 +521,23 @@ async fn main() {
         .with_http_only(true)
         .with_same_site(tower_sessions::cookie::SameSite::Lax);
 
-    let inner = Router::new()
+    let p = &base_path; // e.g. "/claudia" or ""
+    let app = Router::new()
         // ── auth (public) ──────────────────────────────
-        .route("/login",  get(get_login).post(post_login))
-        .route("/verify", get(get_verify).post(post_verify))
-        .route("/logout", post(post_logout))
+        .route(&format!("{p}/login"),  get(get_login).post(post_login))
+        .route(&format!("{p}/verify"), get(get_verify).post(post_verify))
+        .route(&format!("{p}/logout"), post(post_logout))
         // ── app (protected) ───────────────────────────
-        .route("/", get(index))
-        .route("/api/sessions", get(api_sessions))
-        .route("/api/sessions/{id}", get(api_session_turns))
-        .route("/chat", post(chat))
+        .route(&format!("{p}/"),       get(index))
+        .route(&format!("{p}/api/sessions"), get(api_sessions))
+        .route(&format!("{p}/api/sessions/{{id}}"), get(api_session_turns))
+        .route(&format!("{p}/chat"),   post(chat))
         .with_state(state)
         .layer(session_layer);
 
-    let app = if base_path.is_empty() {
-        inner
-    } else {
-        Router::new().nest(&base_path, inner)
-    };
-
-    let addr = "0.0.0.0:3033";
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr = format!("0.0.0.0:{port}");
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     info!("Listening on http://{addr}");
     axum::serve(listener, app).await.unwrap();
 }

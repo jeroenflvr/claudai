@@ -1,0 +1,13 @@
+services:
+  claudia:
+    image: 192.168.0.66:5000/claudia:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    env_file: .env
+    volumes:
+      - claudia-data:/data
+
+volumes:
+  claudia-data:
