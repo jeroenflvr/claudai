@@ -1,4 +1,4 @@
-# claudia
+# <img src="static/img/icon.svg" width="50" height="50" align="absmiddle" alt="" /> claudia 
 
 A self-hosted web UI for the Claude API. Single-user, two-factor auth, conversation history stored in DuckDB.
 
