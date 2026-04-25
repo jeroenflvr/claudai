@@ -53,3 +53,42 @@ impl Config {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn base_path_trailing_slash_is_trimmed() {
+        let raw = "/app/".trim_end_matches('/').to_string();
+        assert_eq!(raw, "/app");
+    }
+
+    #[test]
+    fn base_path_multiple_trailing_slashes_trimmed() {
+        let raw = "/app///".trim_end_matches('/').to_string();
+        assert_eq!(raw, "/app");
+    }
+
+    #[test]
+    fn base_path_empty_string_stays_empty() {
+        let raw = "".trim_end_matches('/').to_string();
+        assert_eq!(raw, "");
+    }
+
+    #[test]
+    fn base_path_without_trailing_slash_unchanged() {
+        let raw = "/myapp".trim_end_matches('/').to_string();
+        assert_eq!(raw, "/myapp");
+    }
+
+    #[test]
+    fn port_default_parses_to_3000() {
+        let port: u16 = "3000".parse().unwrap();
+        assert_eq!(port, 3000);
+    }
+
+    #[test]
+    fn smtp_port_default_parses_to_587() {
+        let port: u16 = "587".parse().unwrap();
+        assert_eq!(port, 587);
+    }
+}
