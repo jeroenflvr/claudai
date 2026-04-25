@@ -42,6 +42,8 @@ async function loadSessions() {
   const list = document.getElementById('session-list');
   try {
     const r = await fetch(`${BASE}/api/sessions`);
+    if (r.status === 401) { window.location = `${BASE}/login`; return; }
+    if (!r.ok) { list.innerHTML = '<div class="sidebar-empty">Failed to load</div>'; return; }
     const sessions = await r.json();
     if (!sessions.length) {
       list.innerHTML = '<div class="sidebar-empty">No history yet</div>';
@@ -69,6 +71,8 @@ async function openSession(sid) {
 
   try {
     const r    = await fetch(`${BASE}/api/sessions/${sid}`);
+    if (r.status === 401) { window.location = `${BASE}/login`; return; }
+    if (!r.ok) throw new Error(`server returned ${r.status}`);
     const turns = await r.json();
 
     const back = document.createElement('button');

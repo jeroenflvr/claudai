@@ -19,7 +19,7 @@ pub fn build(state: Arc<AppState>) -> Router {
         //  app (protected) 
         .route(&format!("{p}/"),                   get(handlers::index::index))
         .route(&format!("{p}/api/sessions"),       get(handlers::sessions::api_sessions))
-        .route(&format!("{p}/api/sessions/{{id}}"),get(handlers::sessions::api_session_turns))
+        .route(&format!("{p}/api/sessions/:id"),   get(handlers::sessions::api_session_turns))
         .route(&format!("{p}/chat"),               post(handlers::chat::chat))
         //  static assets (embedded) 
         .route(&format!("{p}/static/css/app.css"),    get(handlers::static_files::app_css))
