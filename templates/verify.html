@@ -98,7 +98,7 @@
     <div class="error">{{ error }}</div>
     {% endif %}
 
-    <form method="post" action="/verify">
+    <form method="post" action="{{ base_path }}/verify">
       <label for="otp">verification code</label>
       <input
         type="text"
@@ -116,7 +116,7 @@
       <button type="submit">verify →</button>
     </form>
 
-    <p class="back"><a href="/login">← back to sign in</a></p>
+    <p class="back"><a href="{{ base_path }}/login">← back to sign in</a></p>
   </div>
 </body>
 </html>

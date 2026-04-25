@@ -34,17 +34,23 @@ const SESSION_OTP_EXP: &str   = "otp_exp";   // unix timestamp expiry
 #[template(path = "login.html")]
 struct LoginTemplate {
     error: String,
+    #[allow(dead_code)]
+    base_path: String,
 }
 
 #[derive(askama::Template)]
 #[template(path = "verify.html")]
 struct VerifyTemplate {
     error: String,
+    #[allow(dead_code)]
+    base_path: String,
 }
 
 #[derive(askama::Template)]
 #[template(path = "index.html")]
-struct IndexTemplate;
+struct IndexTemplate {
+    base_path: String,
+}
 
 #[derive(askama::Template)]
 #[template(path = "response.html")]
@@ -119,6 +125,7 @@ struct AppState {
     auth_email: String,
     #[allow(dead_code)]
     app_url: String,
+    base_path: String,
 }
 
 // ---------------------------------------------------------------------------
@@ -189,13 +196,13 @@ struct VerifyForm {
     otp: String,
 }
 
-async fn get_login(session: Session) -> impl IntoResponse {
+async fn get_login(State(state): State<Arc<AppState>>, session: Session) -> impl IntoResponse {
     // If already authenticated, skip straight to the app
     let step: Option<String> = session.get(SESSION_AUTH_STEP).await.unwrap_or(None);
     if step.as_deref() == Some("authenticated") {
         return Redirect::to("/").into_response();
     }
-    LoginTemplate { error: String::new() }.into_response()
+    LoginTemplate { error: String::new(), base_path: state.base_path.clone() }.into_response()
 }
 
 async fn post_login(
@@ -207,6 +214,7 @@ async fn post_login(
         warn!("Failed login attempt");
         return LoginTemplate {
             error: "Incorrect password.".into(),
+            base_path: state.base_path.clone(),
         }
         .into_response();
     }
@@ -229,22 +237,24 @@ async fn post_login(
             session.delete().await.ok();
             LoginTemplate {
                 error: format!("Could not send verification email: {e}"),
+                base_path: state.base_path.clone(),
             }
             .into_response()
         }
     }
 }
 
-async fn get_verify(session: Session) -> impl IntoResponse {
+async fn get_verify(State(state): State<Arc<AppState>>, session: Session) -> impl IntoResponse {
     let step: Option<String> = session.get(SESSION_AUTH_STEP).await.unwrap_or(None);
     match step.as_deref() {
         Some("authenticated") => Redirect::to("/").into_response(),
-        Some("password_ok")   => VerifyTemplate { error: String::new() }.into_response(),
+        Some("password_ok")   => VerifyTemplate { error: String::new(), base_path: state.base_path.clone() }.into_response(),
         _                     => Redirect::to("/login").into_response(),
     }
 }
 
 async fn post_verify(
+    State(state): State<Arc<AppState>>,
     session: Session,
     Form(form): Form<VerifyForm>,
 ) -> impl IntoResponse {
@@ -268,6 +278,7 @@ async fn post_verify(
         warn!("Incorrect OTP attempt");
         return VerifyTemplate {
             error: "Incorrect code. Please try again.".into(),
+            base_path: state.base_path.clone(),
         }
         .into_response();
     }
@@ -290,9 +301,9 @@ async fn post_logout(session: Session) -> impl IntoResponse {
 // App handlers (all require auth)
 // ---------------------------------------------------------------------------
 
-async fn index(session: Session) -> impl IntoResponse {
+async fn index(State(state): State<Arc<AppState>>, session: Session) -> impl IntoResponse {
     if let Err(r) = require_auth(&session).await { return r.into_response(); }
-    IndexTemplate.into_response()
+    IndexTemplate { base_path: state.base_path.clone() }.into_response()
 }
 
 async fn api_sessions(
@@ -475,6 +486,9 @@ async fn main() {
     let smtp_pass  = std::env::var("SMTP_PASS").expect("SMTP_PASS must be set");
     let auth_email = std::env::var("AUTH_EMAIL").expect("AUTH_EMAIL must be set");
     let app_url    = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let base_path  = std::env::var("BASE_PATH").unwrap_or_else(|_| String::new());
+    let base_path  = base_path.trim_end_matches('/').to_string();
+    if !base_path.is_empty() { info!("Base path prefix: {base_path}"); }
 
     info!("Using model: {model}");
     info!("OTP codes will be sent to: {auth_email}");
@@ -496,7 +510,7 @@ async fn main() {
 
     let state = Arc::new(AppState {
         api_key, model, password,
-        smtp_host, smtp_port, smtp_user, smtp_pass, auth_email, app_url,
+        smtp_host, smtp_port, smtp_user, smtp_pass, auth_email, app_url, base_path: base_path.clone(),
         http: reqwest::Client::new(),
         db: Mutex::new(db),
     });
@@ -508,7 +522,7 @@ async fn main() {
         .with_http_only(true)
         .with_same_site(tower_sessions::cookie::SameSite::Lax);
 
-    let app = Router::new()
+    let inner = Router::new()
         // ── auth (public) ──────────────────────────────
         .route("/login",  get(get_login).post(post_login))
         .route("/verify", get(get_verify).post(post_verify))
@@ -521,7 +535,13 @@ async fn main() {
         .with_state(state)
         .layer(session_layer);
 
-    let addr = "0.0.0.0:3000";
+    let app = if base_path.is_empty() {
+        inner
+    } else {
+        Router::new().nest(&base_path, inner)
+    };
+
+    let addr = "0.0.0.0:3033";
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     info!("Listening on http://{addr}");
     axum::serve(listener, app).await.unwrap();

@@ -354,7 +354,7 @@
       </button>
 
       <button class="new-chat-btn" onclick="newChat()">+ New chat</button>
-      <form method="post" action="/logout" style="margin:0">
+      <form method="post" action="{{ base_path }}/logout" style="margin:0">
         <button type="submit" class="logout-btn" title="Sign out">sign out</button>
       </form>
     </header>
@@ -389,6 +389,8 @@
   </div><!-- /#main -->
 
   <script>
+  const BASE = '{{ base_path }}';
+
   // ── theme ─────────────────────────────────────────────────────────────
   (function () {
     const saved = localStorage.getItem('claudia_theme') || 'dark';
@@ -432,7 +434,7 @@
   async function loadSessions() {
     const list = document.getElementById('session-list');
     try {
-      const r = await fetch('/api/sessions');
+      const r = await fetch(`${BASE}/api/sessions`);
       const sessions = await r.json();
       if (!sessions.length) {
         list.innerHTML = '<div class="sidebar-empty">No history yet</div>';
@@ -459,7 +461,7 @@
     panel.classList.remove('visible');
 
     try {
-      const r    = await fetch(`/api/sessions/${sid}`);
+      const r    = await fetch(`${BASE}/api/sessions/${sid}`);
       const turns = await r.json();
 
       const back = document.createElement('button');
@@ -576,7 +578,7 @@
     sendBtn.disabled = true;
 
     try {
-      const resp = await fetch('/chat', {
+      const resp = await fetch(`${BASE}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -93,7 +93,7 @@
     <div class="error">{{ error }}</div>
     {% endif %}
 
-    <form method="post" action="/login">
+    <form method="post" action="{{ base_path }}/login">
       <label for="password">password</label>
       <input type="password" id="password" name="password" autofocus autocomplete="current-password" required />
       <br style="margin:.75rem 0;display:block" />
