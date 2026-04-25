@@ -1,0 +1,54 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  IMAGE: claudia
+  VERSION:
+    sh: grep '^version' Cargo.toml | head -1 | sed 's/.*= "\(.*\)"/\1/'
+  TAG: "{{.REGISTRY}}/{{.IMAGE}}:{{.VERSION}}"
+  TAG_LATEST: "{{.REGISTRY}}/{{.IMAGE}}:latest"
+
+tasks:
+  build:
+    desc: Build Docker image and tag as :version and :latest
+    cmds:
+      - docker build -t {{.TAG}} -t {{.TAG_LATEST}} .
+
+  push:
+    desc: Push both tags to the registry
+    cmds:
+      - docker push {{.TAG}}
+      - docker push {{.TAG_LATEST}}
+
+  release:
+    desc: Build and push
+    cmds:
+      - task: build
+      - task: push
+
+  run:
+    desc: Start the app via docker compose
+    cmds:
+      - docker compose up -d
+
+  clean:
+    desc: Stop containers and remove local images
+    cmds:
+      - docker compose down
+      - docker rmi {{.TAG}} {{.TAG_LATEST}} 2>/dev/null || true
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - nix develop --command cargo test
+
+  test-verbose:
+    desc: Run unit tests with output
+    cmds:
+      - nix develop --command cargo test -- --nocapture
+
+  dev:
+    desc: Build and run locally (outside Docker)
+    cmds:
+      - nix develop --command cargo run

@@ -66,16 +66,26 @@ All config is via environment variables. Copy `.env` and fill in:
 nix develop          # enters shell with Rust + cmake + gcc
 cargo build          # dev build
 cargo run            # run with .env loaded by dotenvy
-make test            # run unit tests
+make test            # run unit tests (or: task test)
 ```
 
 ### Docker
 
+Both `make` and `task` ([go-task](https://taskfile.dev)) are supported. `task` is available inside `nix develop`.
+
 ```sh
-cp .env.example .env   # edit .env with real values
+cp .env.example .env   # edit .env — set REGISTRY, credentials, etc.
+
+# with make
 make build             # docker build, tags :version and :latest
 make run               # docker compose up -d
 make release           # build + push to registry
+
+# with task
+task build
+task run
+task release
+task                   # lists all available tasks
 ```
 
 The `docker-compose.yml` expects a `.env` file alongside it and mounts a `claudia-data` volume at `/data` for the DuckDB file.

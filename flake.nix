@@ -26,6 +26,7 @@
           pkg-config
           cmake
           gcc
+          go-task
         ];
 
         # Runtime / link-time libraries (duckdb is now statically linked via bundled feature)

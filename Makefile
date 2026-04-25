@@ -1,4 +1,7 @@
-REGISTRY  := 192.168.0.66:5000
+-include .env
+export
+
+REGISTRY  ?=
 IMAGE     := claudia
 VERSION   := $(shell grep '^version' Cargo.toml | head -1 | sed 's/.*= "\(.*\)"/\1/')
 TAG       := $(REGISTRY)/$(IMAGE):$(VERSION)
