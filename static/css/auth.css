@@ -62,6 +62,7 @@ input[type="text"]:focus { border-color: var(--accent); }
 }
 button {
   width: 100%;
+  margin-top: 1.25rem;
   padding: .65rem;
   background: var(--accent);
   color: #fff;
