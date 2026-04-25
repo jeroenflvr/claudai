@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- rounded square background -->
+  <rect width="64" height="64" rx="16" fill="#1a1a1b"/>
+
+  <!-- five petals, rotated around centre -->
+  <g transform="translate(32,32)">
+    <ellipse cx="0" cy="-10" rx="4.5" ry="8" fill="#cc785c" opacity="0.9"                   />
+    <ellipse cx="0" cy="-10" rx="4.5" ry="8" fill="#cc785c" opacity="0.9" transform="rotate(72)" />
+    <ellipse cx="0" cy="-10" rx="4.5" ry="8" fill="#e8a045" opacity="0.85" transform="rotate(144)"/>
+    <ellipse cx="0" cy="-10" rx="4.5" ry="8" fill="#e8a045" opacity="0.85" transform="rotate(216)"/>
+    <ellipse cx="0" cy="-10" rx="4.5" ry="8" fill="#cc785c" opacity="0.9" transform="rotate(288)"/>
+    <!-- centre dot -->
+    <circle r="5" fill="#f0c080"/>
+  </g>
+</svg>

@@ -25,6 +25,7 @@ pub fn build(state: Arc<AppState>) -> Router {
         .route(&format!("{p}/static/css/app.css"),    get(handlers::static_files::app_css))
         .route(&format!("{p}/static/css/auth.css"),   get(handlers::static_files::auth_css))
         .route(&format!("{p}/static/js/app.js"),      get(handlers::static_files::app_js))
+        .route(&format!("{p}/static/img/icon.svg"),   get(handlers::static_files::icon_svg))
         .with_state(state)
         .layer(session_layer)
 }

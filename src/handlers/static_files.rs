@@ -21,3 +21,10 @@ pub async fn app_js() -> impl IntoResponse {
         include_str!("../../static/js/app.js"),
     )
 }
+
+pub async fn icon_svg() -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "image/svg+xml")],
+        include_str!("../../static/img/icon.svg"),
+    )
+}
