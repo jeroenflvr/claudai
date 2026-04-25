@@ -162,6 +162,16 @@
     }
     .new-chat-btn:hover { color: var(--text); border-color: var(--accent); }
 
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 10px; border-radius: 20px;
+      font-size: .8rem; cursor: pointer;
+      transition: color .12s, border-color .12s; white-space: nowrap;
+    }
+    .logout-btn:hover { color: #e57373; border-color: #e57373; }
+
     /* ── scrollable content area ────────────────────── */
     /* Both #messages and #history-panel live here and swap visibility */
     #scroll-area {
@@ -344,6 +354,9 @@
       </button>
 
       <button class="new-chat-btn" onclick="newChat()">+ New chat</button>
+      <form method="post" action="/logout" style="margin:0">
+        <button type="submit" class="logout-btn" title="Sign out">sign out</button>
+      </form>
     </header>
 
     <!-- scrollable area: chat messages OR history detail (swapped by JS) -->
