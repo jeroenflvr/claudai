@@ -4,7 +4,7 @@ use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
     routing::{get, post},
-    Router,
+    Json, Router,
 };
 use chrono::Utc;
 use duckdb::Connection;
@@ -25,6 +25,26 @@ struct IndexTemplate;
 struct ResponseTemplate {
     content: String,
     history_json: String,
+}
+
+// ---------------------------------------------------------------------------
+// DB row types (returned as JSON to the browser)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Serialize)]
+struct SessionSummary {
+    session_id: String,
+    first_message: String,
+    turn_count: i64,
+    started_at: String,
+}
+
+#[derive(Debug, Serialize)]
+struct TurnRow {
+    turn: i32,
+    user_message: String,
+    assistant_response: String,
+    created_at: String,
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +93,74 @@ struct AppState {
 
 async fn index() -> impl IntoResponse {
     IndexTemplate
+}
+
+/// GET /api/sessions — list of sessions ordered newest first
+async fn api_sessions(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<SessionSummary>>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("DB lock: {e}"))
+    })?;
+    let mut stmt = db
+        .prepare(
+            "SELECT session_id,
+                    MIN(user_message) AS first_message,
+                    COUNT(*)          AS turn_count,
+                    MIN(created_at)   AS started_at
+             FROM turns
+             GROUP BY session_id
+             ORDER BY started_at DESC",
+        )
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB prepare: {e}")))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(SessionSummary {
+                session_id:    row.get(0)?,
+                first_message: row.get(1)?,
+                turn_count:    row.get(2)?,
+                started_at:    row.get(3)?,
+            })
+        })
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB query: {e}")))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB row: {e}")))?;
+
+    Ok(Json(rows))
+}
+
+/// GET /api/sessions/:id — all turns for one session
+async fn api_session_turns(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(session_id): axum::extract::Path<String>,
+) -> Result<Json<Vec<TurnRow>>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("DB lock: {e}"))
+    })?;
+    let mut stmt = db
+        .prepare(
+            "SELECT turn, user_message, assistant_response, created_at
+             FROM turns
+             WHERE session_id = ?
+             ORDER BY turn ASC",
+        )
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB prepare: {e}")))?;
+
+    let rows = stmt
+        .query_map([&session_id], |row| {
+            Ok(TurnRow {
+                turn:               row.get(0)?,
+                user_message:       row.get(1)?,
+                assistant_response: row.get(2)?,
+                created_at:         row.get(3)?,
+            })
+        })
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB query: {e}")))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB row: {e}")))?;
+
+    Ok(Json(rows))
 }
 
 async fn chat(
@@ -227,6 +315,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(index))
+        .route("/api/sessions", get(api_sessions))
+        .route("/api/sessions/{id}", get(api_session_turns))
         // Registered as POST so the browser can send a body (GET bodies are
         // rejected by the Fetch spec).  The client sets
         // X-HTTP-Method-Override: GET to declare the semantic intent.
