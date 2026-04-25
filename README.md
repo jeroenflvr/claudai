@@ -14,7 +14,7 @@ A self-hosted web UI for the Claude API. Single-user, two-factor auth, conversat
 ## How it works
 
 ```
-Browser ──POST /chat──► Axum handler
+Browser -- POST /chat --> Axum handler
   {message, history,     (sends as POST with X-HTTP-Method-Override: GET header;
    session_id}            the handler rejects requests without that header)
                          ├─ validates session (tower-sessions)
