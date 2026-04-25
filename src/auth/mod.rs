@@ -52,7 +52,7 @@ pub async fn get_login(
     if step.as_deref() == Some("authenticated") {
         return Redirect::to(&format!("{}/", state.base_path)).into_response();
     }
-    LoginTemplate { error: String::new(), base_path: state.base_path.clone() }.into_response()
+    LoginTemplate { error: String::new(), base_path: state.base_path.clone(), version: env!("CARGO_PKG_VERSION") }.into_response()
 }
 
 pub async fn post_login(
@@ -65,6 +65,7 @@ pub async fn post_login(
         return LoginTemplate {
             error: "Incorrect password.".into(),
             base_path: state.base_path.clone(),
+            version: env!("CARGO_PKG_VERSION"),
         }
         .into_response();
     }
@@ -87,6 +88,7 @@ pub async fn post_login(
             LoginTemplate {
                 error: format!("Could not send verification email: {e}"),
                 base_path: state.base_path.clone(),
+                version: env!("CARGO_PKG_VERSION"),
             }
             .into_response()
         }
@@ -103,7 +105,7 @@ pub async fn get_verify(
             Redirect::to(&format!("{}/", state.base_path)).into_response()
         }
         Some("password_ok") => {
-            VerifyTemplate { error: String::new(), base_path: state.base_path.clone() }
+            VerifyTemplate { error: String::new(), base_path: state.base_path.clone(), version: env!("CARGO_PKG_VERSION") }
                 .into_response()
         }
         _ => Redirect::to(&format!("{}/login", state.base_path)).into_response(),
@@ -136,6 +138,7 @@ pub async fn post_verify(
         return VerifyTemplate {
             error: "Incorrect code. Please try again.".into(),
             base_path: state.base_path.clone(),
+            version: env!("CARGO_PKG_VERSION"),
         }
         .into_response();
     }

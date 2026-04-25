@@ -19,6 +19,7 @@ RUN mkdir src && echo 'fn main(){}' > src/main.rs \
 # Now build the real source
 COPY src ./src
 COPY templates ./templates
+COPY static ./static
 # Touch main.rs so cargo knows it changed
 RUN touch src/main.rs && cargo build --release
 

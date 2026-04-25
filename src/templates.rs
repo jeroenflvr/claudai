@@ -4,6 +4,8 @@ pub struct LoginTemplate {
     pub error:     String,
     #[allow(dead_code)]
     pub base_path: String,
+    #[allow(dead_code)]
+    pub version:   &'static str,
 }
 
 #[derive(askama::Template)]
@@ -12,12 +14,16 @@ pub struct VerifyTemplate {
     pub error:     String,
     #[allow(dead_code)]
     pub base_path: String,
+    #[allow(dead_code)]
+    pub version:   &'static str,
 }
 
 #[derive(askama::Template)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
     pub base_path: String,
+    #[allow(dead_code)]
+    pub version:   &'static str,
 }
 
 #[derive(askama::Template)]
