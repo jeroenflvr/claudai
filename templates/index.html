@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Claude AI</title>
+  <title>claudia</title>
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <link id="hljs-theme-dark"  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
   <link id="hljs-theme-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" disabled />
@@ -13,36 +13,36 @@
 
     /* ── theme tokens ───────────────────────────────── */
     :root[data-theme="dark"] {
-      --bg:           #212121;
-      --bg2:          #181818;
-      --surface:      #2f2f2f;
-      --surface2:     #3a3a3a;
-      --border:       #3d3d3d;
-      --user-bg:      #303030;
-      --text:         #ececec;
-      --text-muted:   #8e8ea0;
-      --text-faint:   #555;
-      --accent:       #a78bfa;
-      --accent-hover: #c4b5fd;
-      --send-bg:      #a78bfa;
-      --danger:       #f87171;
-      --code-bg:      #161616;
+      --bg:           #1a1a1b;
+      --bg2:          #131314;
+      --surface:      #242526;
+      --surface2:     #2e2e30;
+      --border:       #393939;
+      --user-bg:      #2a2a2b;
+      --text:         #d0d2d5;
+      --text-muted:   #7a7d82;
+      --text-faint:   #4a4d52;
+      --accent:       #e8a045;
+      --accent-hover: #f0b060;
+      --send-bg:      #e8a045;
+      --danger:       #d95b5b;
+      --code-bg:      #111112;
     }
     :root[data-theme="light"] {
-      --bg:           #f9f9f9;
-      --bg2:          #f0f0f0;
+      --bg:           #f6f6f6;
+      --bg2:          #efefef;
       --surface:      #ffffff;
-      --surface2:     #ebebeb;
-      --border:       #d4d4d4;
-      --user-bg:      #f0f0f0;
-      --text:         #1a1a1a;
-      --text-muted:   #666;
-      --text-faint:   #aaa;
-      --accent:       #7c3aed;
-      --accent-hover: #6d28d9;
-      --send-bg:      #7c3aed;
-      --danger:       #dc2626;
-      --code-bg:      #f6f8fa;
+      --surface2:     #e8e8e8;
+      --border:       #d0d0d0;
+      --user-bg:      #eeeeee;
+      --text:         #242526;
+      --text-muted:   #6a6e77;
+      --text-faint:   #b0b3b8;
+      --accent:       #c96a10;
+      --accent-hover: #b85e0d;
+      --send-bg:      #c96a10;
+      --danger:       #c0392b;
+      --code-bg:      #f0f0f0;
     }
 
     html, body {
@@ -344,7 +344,7 @@
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#cc785c"/>
       </svg>
-      <h1>Claude</h1>
+      <h1>claudia</h1>
 
       <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme" style="margin-left:auto;">
         <!-- sun icon (shown in dark mode) -->
@@ -376,14 +376,14 @@
       <div class="input-inner">
         <form id="chat-form" onsubmit="sendChat(event)">
           <div class="input-row">
-            <textarea id="message" placeholder="Message Claude…" rows="1"
+            <textarea id="message" placeholder="Message claudia…" rows="1"
               onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
             <button type="submit" id="send-btn" title="Send">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
           </div>
         </form>
-        <p class="hint">Claude can make mistakes. Verify important information.</p>
+        <p class="hint">claudia can make mistakes. Verify important information.</p>
       </div>
     </div>
   </div><!-- /#main -->
@@ -391,7 +391,7 @@
   <script>
   // ── theme ─────────────────────────────────────────────────────────────
   (function () {
-    const saved = localStorage.getItem('claudai_theme') || 'dark';
+    const saved = localStorage.getItem('claudia_theme') || 'dark';
     applyTheme(saved);
   })();
 
@@ -405,7 +405,7 @@
       sun.style.display  = t === 'dark'  ? '' : 'none';
       moon.style.display = t === 'light' ? '' : 'none';
     }
-    localStorage.setItem('claudai_theme', t);
+    localStorage.setItem('claudia_theme', t);
   }
 
   function toggleTheme() {
@@ -415,8 +415,8 @@
 
   // ── session ID ────────────────────────────────────────────────────────
   function getSessionId() {
-    let sid = sessionStorage.getItem('claudai_session');
-    if (!sid) { sid = crypto.randomUUID(); sessionStorage.setItem('claudai_session', sid); }
+    let sid = sessionStorage.getItem('claudia_session');
+    if (!sid) { sid = crypto.randomUUID(); sessionStorage.setItem('claudia_session', sid); }
     return sid;
   }
 
@@ -522,7 +522,7 @@
   }
 
   function newChat() {
-    sessionStorage.removeItem('claudai_session');
+    sessionStorage.removeItem('claudia_session');
     document.getElementById('cl-history').value = '[]';
     closeHistoryPanel();
     document.getElementById('messages').innerHTML = `

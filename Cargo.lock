@@ -511,7 +511,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "claudai"
+name = "claudia"
 version = "0.1.0"
 dependencies = [
  "askama",

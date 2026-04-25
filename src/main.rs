@@ -133,7 +133,7 @@ fn generate_otp() -> String {
 async fn send_otp_email(state: &AppState, otp: &str) -> Result<(), String> {
     let email = EmailMessage::builder()
         .from(
-            format!("claudai <{}>", state.smtp_user)
+            format!("claudia <{}>", state.smtp_user)
                 .parse()
                 .map_err(|e| format!("Bad from address: {e}"))?,
         )
@@ -141,7 +141,7 @@ async fn send_otp_email(state: &AppState, otp: &str) -> Result<(), String> {
             .auth_email
             .parse()
             .map_err(|e| format!("Bad to address: {e}"))?)
-        .subject("claudai — your login code")
+        .subject("claudia — your login code")
         .header(ContentType::TEXT_PLAIN)
         .body(format!(
             "Your one-time login code is:\n\n  {otp}\n\nIt expires in 5 minutes."
@@ -459,7 +459,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "claudai=info".into()),
+                .unwrap_or_else(|_| "claudia=info".into()),
         )
         .init();
 
@@ -479,7 +479,7 @@ async fn main() {
     info!("Using model: {model}");
     info!("OTP codes will be sent to: {auth_email}");
 
-    let db_path = std::env::var("DB_PATH").unwrap_or_else(|_| "claudai.duckdb".to_string());
+    let db_path = std::env::var("DB_PATH").unwrap_or_else(|_| "claudia.duckdb".to_string());
     let db = Connection::open(&db_path)
         .unwrap_or_else(|e| panic!("Failed to open DuckDB at {db_path}: {e}"));
     db.execute_batch(

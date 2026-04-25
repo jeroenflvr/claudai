@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>claudai — sign in</title>
+  <title>claudia — sign in</title>
   <style>
     :root[data-theme="dark"] {
-      --bg:       #0d0d0d;
-      --surface:  #1a1a1a;
-      --border:   #2e2e2e;
-      --text:     #e8e8e8;
-      --muted:    #888;
-      --accent:   #7c6af7;
-      --err:      #e57373;
+      --bg:       #1a1a1b;
+      --surface:  #242526;
+      --border:   #393939;
+      --text:     #d0d2d5;
+      --muted:    #7a7d82;
+      --accent:   #e8a045;
+      --err:      #d95b5b;
     }
     :root[data-theme="light"] {
-      --bg:       #f5f5f5;
+      --bg:       #f6f6f6;
       --surface:  #ffffff;
-      --border:   #d4d4d4;
-      --text:     #1a1a1a;
-      --muted:    #666;
-      --accent:   #5a4fcf;
-      --err:      #c62828;
+      --border:   #d0d0d0;
+      --text:     #242526;
+      --muted:    #6a6e77;
+      --accent:   #c96a10;
+      --err:      #c0392b;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -87,7 +87,7 @@
 </head>
 <body>
   <div class="card">
-    <h1>sign in to <span>claudai</span></h1>
+    <h1>sign in to <span>claudia</span></h1>
 
     {% if !error.is_empty() %}
     <div class="error">{{ error }}</div>

@@ -1,5 +1,5 @@
 {
-  description = "claudai — Rust/Axum web interface to the Claude API";
+  description = "claudia — Rust/Axum web interface to the Claude API";
 
   inputs = {
     nixpkgs.url     = "github:NixOS/nixpkgs/nixos-unstable";
@@ -43,7 +43,7 @@
 
           # Handy: show the binary path when entering the shell
           shellHook = ''
-            echo "claudai dev shell — rust $(rustc --version)"
+            echo "claudia dev shell — rust $(rustc --version)"
             echo "duckdb: $(pkg-config --modversion duckdb 2>/dev/null || echo 'check PKG_CONFIG_PATH')"
           '';
         };
@@ -52,7 +52,7 @@
         # Nix package build  —  `nix build`
         # -----------------------------------------------------------------
         packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname   = "claudai";
+          pname   = "claudia";
           version = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package.version;
           src     = pkgs.lib.cleanSource ./.;
 
