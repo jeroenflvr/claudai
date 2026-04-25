@@ -1,0 +1,23 @@
+{#-
+  Fragment returned by GET /chat.
+  Contains:
+    1. The assistant message bubble.
+    2. A hidden <span> carrying the updated history JSON as a data attribute.
+       JavaScript reads this and stores it in the client-side #history input
+       so the full conversation context travels with every subsequent request.
+-#}
+
+<div class="message assistant">
+  <div class="avatar assistant">AI</div>
+  {#- content is rendered as raw text here; the browser-side JS turns it into
+      HTML via marked.js.  We mark it with the sentinel class so JS knows
+      to process it. -#}
+  <div class="content assistant-raw-content">{{ content }}</div>
+</div>
+
+{#- History carrier — invisible, extracted and removed by JS -#}
+<span
+  data-history-update="{{ history_json }}"
+  style="display:none"
+  aria-hidden="true"
+></span>
