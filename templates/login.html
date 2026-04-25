@@ -4,86 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>claudia — sign in</title>
-  <style>
-    :root[data-theme="dark"] {
-      --bg:       #1a1a1b;
-      --surface:  #242526;
-      --border:   #393939;
-      --text:     #d0d2d5;
-      --muted:    #7a7d82;
-      --accent:   #e8a045;
-      --err:      #d95b5b;
-    }
-    :root[data-theme="light"] {
-      --bg:       #f6f6f6;
-      --surface:  #ffffff;
-      --border:   #d0d0d0;
-      --text:     #242526;
-      --muted:    #6a6e77;
-      --accent:   #c96a10;
-      --err:      #c0392b;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 2.5rem 2rem;
-      width: min(380px, 92vw);
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-    h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
-    h1 span { color: var(--accent); }
-    label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: .35rem; }
-    input[type="password"] {
-      width: 100%;
-      padding: .6rem .9rem;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 1rem;
-      outline: none;
-      transition: border-color .15s;
-    }
-    input[type="password"]:focus { border-color: var(--accent); }
-    button {
-      width: 100%;
-      padding: .65rem;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: opacity .15s;
-    }
-    button:hover { opacity: .88; }
-    .error {
-      color: var(--err);
-      font-size: .875rem;
-      padding: .5rem .75rem;
-      background: color-mix(in srgb, var(--err) 12%, transparent);
-      border-radius: 6px;
-    }
-  </style>
-  <script>
-    // Respect the saved theme preference
-    const t = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-  </script>
+  <link rel="stylesheet" href="{{ base_path }}/static/css/auth.css" />
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('claudia_theme') || 'dark');</script>
 </head>
 <body>
   <div class="card">

@@ -1,4 +1,4 @@
-# ── Stage 1: build ────────────────────────────────────────────────────────────
+#  Stage 1: build 
 FROM rust:1.95-bookworm AS builder
 
 RUN apt-get update && apt-get install -y \
@@ -22,7 +22,7 @@ COPY templates ./templates
 # Touch main.rs so cargo knows it changed
 RUN touch src/main.rs && cargo build --release
 
-# ── Stage 2: runtime ──────────────────────────────────────────────────────────
+#  Stage 2: runtime 
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \

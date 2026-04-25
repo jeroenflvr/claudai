@@ -7,7 +7,7 @@ services:
       - "${PORT:-3000}:${PORT:-3000}"
     env_file: .env
     volumes:
-      - claudia-data:/data
+      - ./data:/data
 
-volumes:
-  claudia-data:
+# volumes:
+#   claudia-data:
