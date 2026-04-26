@@ -24,6 +24,7 @@ pub struct IndexTemplate {
     pub base_path: String,
     #[allow(dead_code)]
     pub version:   &'static str,
+    pub model:     String,
 }
 
 #[derive(askama::Template)]
