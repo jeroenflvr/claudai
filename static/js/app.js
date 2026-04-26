@@ -75,11 +75,23 @@ async function openSession(sid) {
     if (!r.ok) throw new Error(`server returned ${r.status}`);
     const turns = await r.json();
 
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:.5rem;margin-bottom:.5rem';
+
     const back = document.createElement('button');
     back.className = 'h-back-btn';
-    back.textContent = '← Back to chat';
+    back.textContent = '← Back';
     back.onclick = closeHistoryPanel;
-    panel.appendChild(back);
+    btnRow.appendChild(back);
+
+    const resume = document.createElement('button');
+    resume.className = 'h-back-btn';
+    resume.textContent = '▶ Resume';
+    resume.style.cssText = 'background:var(--accent);color:#fff;border-color:var(--accent)';
+    resume.onclick = () => resumeSession(sid, turns);
+    btnRow.appendChild(resume);
+
+    panel.appendChild(btnRow);
 
     const title = document.createElement('h2');
     title.textContent = `Session — ${turns.length} turn${turns.length !== 1 ? 's' : ''}`;
@@ -110,6 +122,42 @@ function closeHistoryPanel() {
   panel.innerHTML = '';
   document.getElementById('messages').style.display = '';
   document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+}
+
+function resumeSession(sid, turns) {
+  // restore session id so next message continues this session
+  sessionStorage.setItem('claudia_session', sid);
+
+  // rebuild history array for the API
+  const history = [];
+  turns.forEach(t => {
+    history.push({ role: 'user',      content: t.user_message });
+    history.push({ role: 'assistant', content: t.assistant_response });
+  });
+  document.getElementById('cl-history').value = JSON.stringify(history);
+
+  // render all turns into the chat view
+  closeHistoryPanel();
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  turns.forEach(t => {
+    const userBubble = document.createElement('div');
+    userBubble.className = 'message user';
+    userBubble.innerHTML = `
+      <div class="avatar user">You</div>
+      <div class="content"><p>${escHtml(t.user_message).replace(/\n/g,'<br>')}</p></div>`;
+    msgs.appendChild(userBubble);
+
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'message assistant';
+    aiBubble.innerHTML = `
+      <div class="avatar assistant">AI</div>
+      <div class="content">${renderMarkdown(t.assistant_response)}</div>`;
+    msgs.appendChild(aiBubble);
+    if (window.hljs) aiBubble.querySelectorAll('pre code').forEach(hljs.highlightElement);
+  });
+  scrollToBottom();
+  document.getElementById('message').focus();
 }
 
 //  helpers 
