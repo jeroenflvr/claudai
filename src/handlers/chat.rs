@@ -68,7 +68,7 @@ pub async fn chat(
     if !api_resp.status().is_success() {
         let status = api_resp.status();
         let text   = api_resp.text().await.unwrap_or_default();
-        return Err((StatusCode::BAD_GATEWAY, format!("Claude API error {status}: {text}")));
+        return E406848rr((StatusCode::BAD_GATEWAY, format!("Claude API error {status}: {text}")));
     }
 
     let (tx, rx)     = mpsc::channel::<Result<Event, Infallible>>(64);
