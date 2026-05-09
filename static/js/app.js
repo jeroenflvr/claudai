@@ -258,29 +258,51 @@ async function sendChat(e) {
       return;
     }
 
-    const html = await resp.text();
-    const tmp  = document.createElement('div');
-    tmp.innerHTML = html;
+    // AI bubble — created immediately, content streamed in
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'message assistant';
+    aiBubble.innerHTML = `<div class="avatar assistant">AI</div><div class="content" id="ai-streaming-content"></div>`;
+    msgs.appendChild(aiBubble);
+    const contentDiv = document.getElementById('ai-streaming-content');
 
-    // extract updated history
-    const historyEl = tmp.querySelector('[data-history-update]');
-    if (historyEl) {
-      document.getElementById('cl-history').value = historyEl.getAttribute('data-history-update');
-      historyEl.remove();
+    let rawText = '';
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      // process all complete lines
+      const lines = buf.split('\n');
+      buf = lines.pop(); // keep the potentially incomplete last line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data) continue;
+        try {
+          const obj = JSON.parse(data);
+          if (obj.type === 'delta') {
+            rawText += obj.text;
+            // show raw text while streaming to avoid markdown re-render flicker
+            contentDiv.textContent = rawText;
+            scrollToBottom();
+          } else if (obj.type === 'done') {
+            // final render with markdown + syntax highlighting
+            contentDiv.innerHTML = renderMarkdown(rawText);
+            contentDiv.removeAttribute('id');
+            if (window.hljs) contentDiv.querySelectorAll('pre code').forEach(hljs.highlightElement);
+            document.getElementById('cl-history').value = JSON.stringify(obj.history);
+            if (sidebarOpen) loadSessions();
+          }
+        } catch(_) {}
+      }
     }
 
-    // render markdown in assistant content
-    tmp.querySelectorAll('.assistant-raw-content').forEach(el => {
-      el.innerHTML = renderMarkdown(el.textContent);
-      el.classList.remove('assistant-raw-content');
-      if (window.hljs) el.querySelectorAll('pre code').forEach(hljs.highlightElement);
-    });
-
-    msgs.appendChild(tmp);
     scrollToBottom();
-
-    // refresh sidebar if open
-    if (sidebarOpen) loadSessions();
 
   } catch(err) {
     document.getElementById('thinking-indicator')?.remove();

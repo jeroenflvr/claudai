@@ -1,13 +1,19 @@
 use crate::{
     auth::require_auth,
-    models::{ChatRequest, ClaudeApiResponse, Message},
+    models::{ChatRequest, Message},
     state::AppState,
-    templates::ResponseTemplate,
 };
-use askama_axum::IntoResponse;
-use axum::{body::Bytes, extract::State, http::{HeaderMap, StatusCode}};
+use axum::{
+    body::Bytes,
+    extract::State,
+    http::{HeaderMap, StatusCode},
+    response::sse::{Event, KeepAlive, Sse},
+};
 use chrono::Utc;
-use std::sync::Arc;
+use futures::StreamExt;
+use std::{convert::Infallible, sync::Arc};
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 use tower_sessions::Session;
 use tracing::info;
 
@@ -16,7 +22,7 @@ pub async fn chat(
     session: Session,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+) -> Result<Sse<ReceiverStream<Result<Event, Infallible>>>, (StatusCode, String)> {
     require_auth(&session, &state.base_path).await
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Not authenticated".into()))?;
 
@@ -41,7 +47,7 @@ pub async fn chat(
     let mut messages = req.history.clone();
     messages.push(Message { role: "user".to_string(), content: req.message.clone() });
 
-    info!("Sending {} message(s) to Claude (model: {})", messages.len(), state.model);
+    info!("Streaming {} message(s) to Claude (model: {})", messages.len(), state.model);
 
     let api_resp = state
         .http
@@ -52,6 +58,7 @@ pub async fn chat(
         .json(&serde_json::json!({
             "model": state.model,
             "max_tokens": 8096,
+            "stream": true,
             "messages": messages,
         }))
         .send()
@@ -61,39 +68,71 @@ pub async fn chat(
     if !api_resp.status().is_success() {
         let status = api_resp.status();
         let text   = api_resp.text().await.unwrap_or_default();
-        return Err((StatusCode::BAD_GATEWAY, format!("Claude API error {status}: {text}")));
+        return E406848rr((StatusCode::BAD_GATEWAY, format!("Claude API error {status}: {text}")));
     }
 
-    let claude: ClaudeApiResponse = api_resp
-        .json()
-        .await
-        .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Failed to parse Claude response: {e}")))?;
+    let (tx, rx)     = mpsc::channel::<Result<Event, Infallible>>(64);
+    let session_id   = req.session_id.clone();
+    let user_message = req.message.clone();
+    let state        = state.clone();
 
-    let content = claude
-        .content
-        .into_iter()
-        .next()
-        .map(|c| c.text)
-        .unwrap_or_else(|| "(no response)".to_string());
+    tokio::spawn(async move {
+        let mut full_text   = String::new();
+        let mut buf         = String::new();
+        let mut byte_stream = api_resp.bytes_stream();
 
-    messages.push(Message { role: "assistant".to_string(), content: content.clone() });
+        while let Some(chunk) = byte_stream.next().await {
+            let chunk = match chunk {
+                Ok(c)  => c,
+                Err(e) => { tracing::error!("Stream read error: {e}"); break; }
+            };
+            buf.push_str(&String::from_utf8_lossy(&chunk));
 
-    let turn = (messages.len() / 2) as i32;
-    let now  = Utc::now().to_rfc3339();
-    {
-        let db = state.db.lock()
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB lock error: {e}")))?;
-        db.execute(
-            "INSERT INTO turns (session_id, turn, user_message, assistant_response, created_at)
-             VALUES (?, ?, ?, ?, ?)",
-            duckdb::params![req.session_id, turn, req.message, content, now],
-        )
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB write error: {e}")))?;
-    }
-    info!(session = %req.session_id, turn, "Turn logged to DB");
+            // consume all complete lines from the buffer
+            while let Some(pos) = buf.find('\n') {
+                let line = buf[..pos].trim_end_matches('\r').to_string();
+                buf = buf[pos + 1..].to_string();
 
-    let history_json = serde_json::to_string(&messages)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Serialisation error: {e}")))?;
+                let Some(data) = line.strip_prefix("data: ") else { continue };
 
-    Ok(ResponseTemplate { content, history_json })
+                let val = match serde_json::from_str::<serde_json::Value>(data) {
+                    Ok(v)  => v,
+                    Err(_) => continue,
+                };
+
+                match val["type"].as_str() {
+                    Some("content_block_delta") => {
+                        if let Some(text) = val["delta"]["text"].as_str() {
+                            full_text.push_str(text);
+                            let payload = serde_json::json!({"type":"delta","text":text}).to_string();
+                            let _ = tx.send(Ok(Event::default().data(payload))).await;
+                        }
+                    }
+                    Some("message_stop") => {
+                        messages.push(Message {
+                            role:    "assistant".to_string(),
+                            content: full_text.clone(),
+                        });
+                        let turn = (messages.len() / 2) as i32;
+                        let now  = Utc::now().to_rfc3339();
+                        if let Ok(db) = state.db.lock() {
+                            let _ = db.execute(
+                                "INSERT INTO turns (session_id, turn, user_message, assistant_response, created_at)
+                                 VALUES (?, ?, ?, ?, ?)",
+                                duckdb::params![session_id, turn, user_message, full_text, now],
+                            );
+                        }
+                        info!(session = %session_id, turn, "Turn logged to DB");
+                        let payload = serde_json::json!({"type":"done","history":messages}).to_string();
+                        let _ = tx.send(Ok(Event::default().data(payload))).await;
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    });
+
+    let stream = ReceiverStream::new(rx);
+    Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
